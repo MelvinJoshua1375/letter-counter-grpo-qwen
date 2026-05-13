@@ -1,0 +1,22 @@
+# Pinned to versions known to work with the Udacity GenAI Fundamentals
+# project (Qwen2.5-3B-Instruct + Unsloth + TRL + vLLM + PEFT + LoRA).
+#
+# GPU path (Linux + NVIDIA CUDA 12.x, >=16 GB VRAM):
+#   uv pip install -r requirements.txt
+#
+# CPU smoke-test path: only the lines below "GPU-only" are required.
+
+# --- Core (GPU + CPU) ---
+transformers>=4.45,<6
+peft>=0.13
+datasets>=3.0
+trl>=0.21
+accelerate>=1.0
+matplotlib>=3.8
+ipykernel>=6.29
+jupyter>=1.0
+
+# --- GPU-only ---
+unsloth>=2025.1
+vllm>=0.6
+torch>=2.4

@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+.ipynb_checkpoints/
+.DS_Store
+
+# trained artefacts that are too large for git
+outputs/
+outputs_smoke/checkpoint-*/optimizer.pt
+outputs_smoke/checkpoint-*/scheduler.pt
+outputs_smoke/checkpoint-*/rng_state.pth
+outputs_smoke/checkpoint-*/tokenizer.json
+outputs_smoke/checkpoint-*/training_args.bin
+lora_letter_counter/
+*.safetensors.tmp
+
+# logs
+*.log
