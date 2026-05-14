@@ -155,8 +155,12 @@ def format_reward_func(completions, **kwargs):
         reward = 0.0
         if re.match(pat, r, flags=re.MULTILINE | re.DOTALL):
             reward += 0.5
+        else:
+            reward -= 0.5    # penalty for a missing / broken XML envelope
         if extract_xml_answer(r).isdigit():
             reward += 0.5
+        else:
+            reward -= 0.5    # penalty for a non-numeric (or missing) answer
         out.append(reward)
     return out
 

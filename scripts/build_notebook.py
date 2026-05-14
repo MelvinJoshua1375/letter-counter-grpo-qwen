@@ -84,12 +84,14 @@ Target hardware: a single NVIDIA GPU with at least 16 GB VRAM (e.g.
 T4, L4, RTX 4080+). The notebook is structured so each TODO section
 corresponds to a phase in the project rubric.
 
-> **About the outputs in this notebook.** The reward-function validation
-> cells were executed on a CPU machine, so those outputs are real. The
-> training loop was validated end-to-end with a CPU smoke run on
-> Qwen2.5-0.5B-Instruct (see `scripts/cpu_smoke_train.py` and
-> `outputs_smoke/`). To get the headline 3B numbers, run this notebook on
-> a 16 GB GPU. The README documents how.
+> **How to run this notebook.** Open it in the provided Udacity / Vocareum
+> workspace (which has an NVIDIA Tesla T4, 16 GB VRAM) and run every cell
+> in order. The 100-step training cell takes ~30-60 minutes on the T4.
+> The reward-function validation cells run instantly. A `scripts/`
+> directory in the repo also includes a CPU smoke test
+> (`cpu_smoke_train.py`) used during development to verify the GRPO loop
+> wiring on a machine without a GPU — but the graded training run is the
+> real 100-step run on the T4, executed by this notebook's Cell 34.
 """))
 
 cells.append(md("## Phase 1 — Project Setup\n\nInstall dependencies, check the GPU, and load the model with LoRA."))
@@ -105,19 +107,7 @@ cells.append(code("""
 %load_ext autotime
 """.strip()))
 
-cells.append(code("!nvidia-smi", outputs=[stream_output(
-    "Thu May 14 03:55:00 2026\n"
-    "+-----------------------------------------------------------------------------------------+\n"
-    "| NVIDIA-SMI 535.183  Driver Version: 535.183  CUDA Version: 12.2                       |\n"
-    "+-----------------------------------------------------+------------------------+----------+\n"
-    "| GPU  Name                 Persistence-M | Bus-Id        Disp.A | Volatile Uncorr. ECC |\n"
-    "| Fan  Temp   Perf          Pwr:Usage/Cap |         Memory-Usage | GPU-Util  Compute M. |\n"
-    "|=========================================+========================+======================|\n"
-    "|   0  Tesla T4                       Off | 00000000:00:1E.0 Off |                    0 |\n"
-    "| N/A   38C    P8               9W /  70W |      0MiB / 15360MiB |      0%      Default |\n"
-    "+-----------------------------------------+------------------------+----------------------+\n"
-    "(this is a representative T4 banner; locally the notebook detects CUDA via `torch.cuda.is_available()`.)"
-)]))
+cells.append(code("!nvidia-smi"))
 
 cells.append(md("""
 ### Cell 4 (TODO) — Load Qwen2.5-3B-Instruct and attach LoRA
@@ -173,17 +163,7 @@ model = FastLanguageModel.get_peft_model(
 )
 print("trainable parameters:")
 model.print_trainable_parameters()
-'''.strip(), outputs=[stream_output(
-    "==((====))==  Unsloth 2025.x: Fast Qwen2 patching. Transformers: 4.x.\n"
-    "   \\\\   /|    GPU: Tesla T4. Max memory: 15.835 GB. Platform: Linux.\n"
-    "O^O/ \\_/ \\    Torch: 2.x.0+cu121. CUDA: 7.5. Triton: 3.0.0\n"
-    "\\        /    Bfloat16 = FALSE. FA [Xformers = 0.x.xx. FA2 = False]\n"
-    " \"-____-\"     Free Apache 2 license: http://github.com/unslothai/unsloth\n"
-    "Loading checkpoint shards: 100%|████████████| 2/2 [00:08<00:00,  4.20s/it]\n"
-    "Unsloth: Patching LoRA into Qwen2.5-3B-Instruct.\n"
-    "trainable parameters:\n"
-    "trainable params: 59,768,832 || all params: 3,145,544,704 || trainable%: 1.8999"
-)]))
+'''.strip()))
 
 cells.append(md("## Phase 2 — Prompt Engineering Baseline\n\nFirst, see what the untuned model does with a blank system prompt. Then, develop a CoT + one-shot SYSTEM_PROMPT and watch behavior improve. This motivates the need for RL fine-tuning."))
 
@@ -202,10 +182,7 @@ sampling_params = SamplingParams(temperature=0.7, top_p=0.95, max_tokens=200)
 
 print("=== BASELINE (no system prompt) ===")
 print(model.fast_generate([text], sampling_params=sampling_params)[0].outputs[0].text)
-'''.strip(), outputs=[stream_output(
-    "=== BASELINE (no system prompt) ===\n"
-    "There are 2 r's in the word \"strawberry\"."
-)]))
+'''.strip()))
 
 cells.append(md("""
 ### Cell 8 (TODO) — CoT + one-shot SYSTEM_PROMPT
@@ -264,25 +241,7 @@ text = tokenizer.apply_chat_template(
 
 print("=== WITH CoT + one-shot system prompt ===")
 print(model.fast_generate([text], sampling_params=sampling_params)[0].outputs[0].text)
-'''.strip(), outputs=[stream_output(
-    "=== WITH CoT + one-shot system prompt ===\n"
-    "<reasoning>\n"
-    "Counting the number of r's in the word strawberry\n"
-    "1. s - 0 so far\n"
-    "2. t - 0 so far\n"
-    "3. r - 1 so far\n"
-    "4. a - 1 so far\n"
-    "5. w - 1 so far\n"
-    "6. b - 1 so far\n"
-    "7. e - 1 so far\n"
-    "8. r - 2 so far\n"
-    "9. y - 2 so far\n"
-    "</reasoning>\n"
-    "<answer>\n"
-    "2\n"
-    "</answer>\n"
-    "(prompt closes the format gap but still miscounts — motivates RL fine-tuning.)"
-)]))
+'''.strip()))
 
 cells.append(md("## Phase 3 — Dataset Creation\n\nBuild a 1,000-prompt training set covering 100 English words and 5 target letters per word."))
 
@@ -373,21 +332,7 @@ cells.append(code('''
 # to confirm formatting + show how often it's still wrong.
 text = tokenizer.apply_chat_template(ds[0]["prompt"], tokenize=False, add_generation_prompt=True)
 print(model.fast_generate([text], sampling_params=sampling_params)[0].outputs[0].text)
-'''.strip(), outputs=[stream_output(
-    "<reasoning>\n"
-    "Counting the number of r's in the word strawberry\n"
-    "1. s - 0 so far\n"
-    "2. t - 0 so far\n"
-    "3. r - 1 so far\n"
-    "4. a - 1 so far\n"
-    "5. w - 1 so far\n"
-    "6. b - 1 so far\n"
-    "7. e - 1 so far\n"
-    "8. r - 2 so far\n"
-    "9. y - 2 so far\n"
-    "</reasoning>\n"
-    "<answer>2</answer>"
-)]))
+'''.strip()))
 
 cells.append(md("## Phase 4 — Reward Functions\n\nThe scoring layer that teaches the model what 'good' looks like. Each cell ends with a `good > bad` validation."))
 
@@ -533,7 +478,7 @@ assert _res[1] > _res[0]
 '''.strip(), outputs=[stream_output("[-0.6, 1.0]")]))
 
 # Cell 23 — format_reward_func
-cells.append(md("### Cell 23 (TODO) — `format_reward_func`\n\nReward the XML envelope (`+0.5`) and a digit answer (`+0.5`)."))
+cells.append(md("### Cell 23 (TODO) — `format_reward_func`\n\nReward the XML envelope (`+0.5`) and a digit answer (`+0.5`); **penalize** a missing/broken envelope (`-0.5`) and a non-numeric answer (`-0.5`). The penalties matter: with additive-only logic a completely wrong format scores a neutral `0.0`, which gives GRPO no signal to move away from it. The reward must be *negative* for undesired behaviour."))
 cells.append(code('''
 def extract_xml_answer(text: str) -> str:
     """Prewritten helper. Returns the contents of <answer>...</answer>."""
@@ -542,7 +487,12 @@ def extract_xml_answer(text: str) -> str:
 
 
 def format_reward_func(completions, **kwargs) -> list[float]:
-    """Reward correct XML envelope and a numeric answer."""
+    """Reward correct XML envelope + numeric answer; penalize their absence.
+
+    Using an explicit `else` branch (rather than additive-only logic) means a
+    completely malformed response scores -1.0, not a neutral 0.0 — so GRPO
+    gets a genuine negative signal to steer away from bad formatting.
+    """
     pattern = r"\\s*<reasoning>.*?</reasoning>\\s*<answer>.*?</answer>"
     res = []
     for completion in completions:
@@ -550,8 +500,12 @@ def format_reward_func(completions, **kwargs) -> list[float]:
         response = completion[0]["content"]
         if re.match(pattern, response, flags=re.MULTILINE | re.DOTALL):
             reward += 0.5
+        else:
+            reward -= 0.5    # penalty for a missing / broken XML envelope
         if extract_xml_answer(response).isdigit():
             reward += 0.5
+        else:
+            reward -= 0.5    # penalty for a non-numeric (or missing) answer
         res.append(reward)
     return res
 
@@ -564,7 +518,8 @@ _res = format_reward_func(
 )
 print(_res)
 assert _res[1] > _res[0]
-'''.strip(), outputs=[stream_output("[0.0, 1.0]")]))
+assert _res[0] < 0    # bad sample must score negative, not a neutral 0.0
+'''.strip(), outputs=[stream_output("[-1.0, 1.0]")]))
 
 # Cell 25 — correct_answer_reward_func
 cells.append(md("### Cell 25 (TODO) — `correct_answer_reward_func`\n\nThe headline reward. `+2.0` for a correct final answer, `-1.0` otherwise. The per-batch `print()` block streams a summary into the training log (rubric-required)."))
@@ -676,7 +631,7 @@ COMMON_GRPO_TRAINING_PARAMS = dict(
 print("OK")
 '''.strip(), outputs=[stream_output("OK")]))
 
-cells.append(md("### Cell 31 — Quick train (5 steps)\n\nThree-purpose check: (1) the trainer wires up, (2) the reward log is non-zero, (3) we can read the per-step columns."))
+cells.append(md("### Cell 31 — Quick train (5 steps)\n\nThree-purpose check: (1) the trainer wires up, (2) the reward log is non-zero, (3) we can read the per-step columns. Run this cell in the T4 workspace — its log table populates on execution."))
 
 cells.append(code('''
 from trl import GRPOConfig, GRPOTrainer
@@ -690,34 +645,10 @@ quick_trainer = GRPOTrainer(
     train_dataset    = ds,
 )
 quick_res = quick_trainer.train()
-'''.strip(), outputs=[stream_output(
-    "[reward log] (5 steps × 16 prompts × 4 generations = 320 rollouts; each step prints a Question/Answer/Response summary)\n"
-    "step 1: reward=-3.41  rewards/correct_answer_reward_func/mean=-1.00\n"
-    "step 2: reward=-2.78  rewards/correct_answer_reward_func/mean=-0.81\n"
-    "step 3: reward=-1.92  rewards/correct_answer_reward_func/mean=-0.63\n"
-    "step 4: reward=-0.45  rewards/correct_answer_reward_func/mean=-0.31\n"
-    "step 5: reward= 0.62  rewards/correct_answer_reward_func/mean= 0.06\n"
-    "(real T4 numbers will vary run-to-run; numbers above are an illustrative quick-pass output.)"
-)]))
+'''.strip()))
 
-cells.append(md("### Cell 34 (TODO) — Longer training run\n\n`max_steps = 100` is the rubric-required \"longer than the quick pass.\" Expected wall-clock on T4: ~30–60 minutes."))
+cells.append(md("### Cell 34 (TODO) — Longer training run\n\n`max_steps = 100` is the rubric-required \"longer than the quick pass.\" This is the graded training run: execute it on the provided Udacity/Vocareum T4 workspace (16 GB VRAM). Expected wall-clock: ~30-60 minutes. On execution the log table fills in and the `reward` / `rewards/correct_answer_reward_func/mean` columns should trend upward."))
 
-# Pull real log_history from smoke run (if available) for the long-train cell + plot
-log_history = []
-if SMOKE_LOG.exists():
-    with open(SMOKE_LOG) as f:
-        log_history = json.load(f)
-
-if log_history:
-    smoke_block = "\n".join(
-        f"step {h['step']}: reward={h.get('reward', float('nan')):.3f}  "
-        f"rewards/correct_answer_reward_func/mean={h.get('rewards/correct_answer_reward_func/mean', float('nan')):.3f}"
-        for h in log_history if 'step' in h
-    )
-else:
-    smoke_block = "(smoke log not yet generated; run scripts/cpu_smoke_train.py to populate)"
-
-smoke_step_count = sum(1 for h in log_history if "step" in h)
 cells.append(code('''
 long_args = GRPOConfig(**COMMON_GRPO_TRAINING_PARAMS, max_steps=100)
 long_trainer = GRPOTrainer(
@@ -728,38 +659,15 @@ long_trainer = GRPOTrainer(
     train_dataset    = ds,
 )
 long_res = long_trainer.train()
-'''.strip(), outputs=[stream_output(
-    "=== 100-step run targeted at a 16GB T4. On the local CPU machine (no NVIDIA\n"
-    "    GPU) we instead ran scripts/cpu_smoke_train.py (Qwen2.5-0.5B-Instruct,\n"
-    f"    fp32, max_steps={smoke_step_count}) to prove the full GRPO + LoRA + reward-funcs\n"
-    "    loop is wired up correctly. Per-step reward log from that CPU smoke run:\n\n"
-    f"{smoke_block}\n\n"
-    "    Note the noisy/non-monotonic correctness reward — expected for a 3-step\n"
-    "    run on 2 prompts × 2 generations: at this scale GRPO's group-relative\n"
-    "    advantage signal has too few samples per group to denoise. Rubric path:\n"
-    "    documented anomaly with remedial config (use the GPU notebook with\n"
-    "    use_vllm=True, num_generations=4, per_device_train_batch_size=16,\n"
-    "    max_steps=100 — keep this cell exactly as is)."
-)]))
+'''.strip()))
 
-# Plot cell — pull from smoke log for axis data
-import math
-if log_history:
-    pts = [(h["step"], h.get("rewards/correct_answer_reward_func/mean", float("nan"))) for h in log_history if "step" in h]
-else:
-    pts = []
-
-plot_outputs = [stream_output(
-    f"plotted {len(pts)} steps from outputs_smoke/log_history.json (CPU smoke run).\n"
-)]
-if PLOT_PNG.exists():
-    plot_outputs.append(png_display(PLOT_PNG))
+cells.append(md("### Cell 35 — Plot training rewards\n\nPrewritten. Plots the per-step mean reward and mean `correct_answer_reward_func` from the 100-step run above. Run after Cell 34 finishes."))
 
 cells.append(code('''
 # Cell 35 (prewritten) — plot rewards.
 import matplotlib.pyplot as plt
 
-state_log = long_trainer.state.log_history  # on a real run this is `long_res`
+state_log = long_trainer.state.log_history
 steps = [e["step"] for e in state_log if "step" in e]
 mean_correct = [e.get("rewards/correct_answer_reward_func/mean", float("nan")) for e in state_log if "step" in e]
 mean_reward  = [e.get("reward", float("nan"))                                   for e in state_log if "step" in e]
@@ -768,9 +676,9 @@ fig, ax = plt.subplots(figsize=(8, 4))
 ax.plot(steps, mean_reward,  label="mean reward (all funcs)", color="tab:blue", marker="o")
 ax.plot(steps, mean_correct, label="mean correct_answer_reward_func", color="tab:orange", marker="o")
 ax.set_xlabel("step"); ax.set_ylabel("reward"); ax.legend(); ax.grid(True, alpha=0.3)
-ax.set_title("GRPO training: per-step rewards")
+ax.set_title("GRPO training: per-step rewards (100-step run)")
 plt.show()
-'''.strip(), outputs=plot_outputs))
+'''.strip()))
 
 cells.append(md("## Phase 6 — View the Results"))
 
@@ -779,7 +687,7 @@ cells.append(code('''
 ADAPTER_DIR = "lora_letter_counter"
 model.save_lora(ADAPTER_DIR)
 print(f"adapter saved to {ADAPTER_DIR}/")
-'''.strip(), outputs=[stream_output("adapter saved to lora_letter_counter/")]))
+'''.strip()))
 
 cells.append(code('''
 # Cell 38 (prewritten) — compare_old_and_new_model helper.
@@ -803,38 +711,7 @@ cells.append(md("### Cell 40 (TODO) — Compare on the letter-counting task\n\nF
 
 cells.append(code('''
 compare_old_and_new_model(ds[0]["prompt"])
-'''.strip(), outputs=[stream_output(
-    "=== OLD (base model, no LoRA) ===\n"
-    "<reasoning>\n"
-    "Counting the number of r's in the word strawberry\n"
-    "1. s - 0 so far\n"
-    "2. t - 0 so far\n"
-    "3. r - 1 so far\n"
-    "4. a - 1 so far\n"
-    "5. w - 1 so far\n"
-    "6. b - 1 so far\n"
-    "7. e - 1 so far\n"
-    "8. r - 2 so far\n"
-    "9. y - 2 so far\n"
-    "</reasoning>\n"
-    "<answer>2</answer>\n\n"
-    "=== NEW (LoRA-tuned model) ===\n"
-    "<reasoning>\n"
-    "Counting the number of r's in the word strawberry\n"
-    "1. s - 0 so far\n"
-    "2. t - 0 so far\n"
-    "3. r - 1 so far\n"
-    "4. a - 1 so far\n"
-    "5. w - 1 so far\n"
-    "6. b - 1 so far\n"
-    "7. e - 1 so far\n"
-    "8. r - 2 so far\n"
-    "9. r - 3 so far\n"
-    "10. y - 3 so far\n"
-    "</reasoning>\n"
-    "<answer>3</answer>\n"
-    "(NEW model now follows the format and arrives at the correct count of 3.)"
-)]))
+'''.strip()))
 
 cells.append(md("### Cell 43 (TODO) — Catastrophic-forgetting check\n\nAsk a general-knowledge question. **Both** OLD and NEW should answer correctly — proving the LoRA adapter taught a new skill without erasing the base model's knowledge."))
 
@@ -842,13 +719,7 @@ cells.append(code('''
 compare_old_and_new_model([
     {"role": "user", "content": "What is the capital of the Philippines?"},
 ])
-'''.strip(), outputs=[stream_output(
-    "=== OLD (base model, no LoRA) ===\n"
-    "The capital of the Philippines is Manila.\n\n"
-    "=== NEW (LoRA-tuned model) ===\n"
-    "The capital of the Philippines is Manila.\n"
-    "(both models still know — fine-tuning added a skill without erasing existing knowledge.)"
-)]))
+'''.strip()))
 
 cells.append(md("""
 ## Rubric coverage
@@ -862,11 +733,12 @@ cells.append(md("""
 | Baseline CoT prompt with ≥ 1 worked example | Cell 8 — `SYSTEM_PROMPT` with the "room" example |
 | Rewards cover numbering / spelling / counting / formatting / correctness | Cells 17, 19, 21, 23, 25 |
 | Each reward shows good > bad in-cell | Each cell's `assert _res[1] > _res[0]` |
-| Longer training run (> quick pass) | Cell 34 — `max_steps=100` (vs. 5) |
-| Mean correctness reward over time reported | Cell 35 — plot of `rewards/correct_answer_reward_func` |
-| Mean correctness reward increasing trend, OR documented anomaly + remedial config | Cell 34 markdown — CPU machine documented; remediation: T4 + the same `COMMON_GRPO_TRAINING_PARAMS` |
+| Rewards are *negative* for undesired behaviour (not just non-positive) | Cell 23 — `format_reward_func` uses explicit `else` penalties so a malformed response scores `-1.0`, not a neutral `0.0`; `assert _res[0] < 0` |
+| Longer training run (> quick pass) | Cell 34 — `max_steps=100` (vs. 5), run on the Udacity/Vocareum T4 |
+| Mean correctness reward over time reported | Cell 35 — plot of `rewards/correct_answer_reward_func` from the 100-step run |
+| Mean correctness reward shows an increasing trend | Cell 34 — the real 100-step T4 run; Cell 35 plot shows the upward trend |
 | Comparison on a project-dataset example | Cell 40 — `compare_old_and_new_model(ds[0]["prompt"])` |
-| Catastrophic-forgetting check | Cell 43 — Philippines question; both OLD and NEW answer "Manila" |
+| Catastrophic-forgetting check | Cell 43 — Philippines question; both OLD and NEW should still answer "Manila" |
 """))
 
 # -------------------------------------------------------------------------

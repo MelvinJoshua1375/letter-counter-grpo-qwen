@@ -7,8 +7,18 @@ Relative Policy Optimization) using **Unsloth** for fast LoRA training and
 **vLLM** for high-throughput rollouts.
 
 Submission for the Udacity Generative AI Fundamentals Nanodegree, Project 1.
-Reworked for **local execution** on a single NVIDIA GPU (>= 16 GB VRAM)
-instead of the Vocareum container.
+
+## How to run
+
+The notebook is **code-complete**: every TODO cell is filled in. It must
+be executed on a 16 GB GPU to produce the graded training run.
+
+1. Open `project/starter/gen_ai_fundamentals_project_starter.ipynb` in the
+   provided Udacity / Vocareum workspace (it has an NVIDIA Tesla T4, 16 GB
+   VRAM).
+2. Run every cell in order (Run All). The reward-function validation cells
+   run instantly; the 100-step training cell (Cell 34) takes ~30-60 minutes.
+3. Once every cell shows output, download the executed `.ipynb` and submit.
 
 ## Repo layout
 
@@ -22,67 +32,34 @@ letter-counter-grpo-qwen/
 │       └── gen_ai_fundamentals_project_starter.ipynb   <- the submission notebook
 ├── scripts/
 │   ├── build_notebook.py        <- rebuilds the notebook from the cell sources
-│   └── cpu_smoke_train.py       <- end-to-end pipeline check on CPU (no GPU needed)
-├── outputs_smoke/               <- artefacts from the CPU smoke run
-│   ├── log_history.json         <- per-step rewards from the 4-step CPU smoke training
-│   └── checkpoint-*/            <- LoRA adapter from the smoke run
-└── plots/
-    └── training_rewards.png     <- rendered plot of the reward trend
+│   ├── make_plot.py             <- renders the reward-trend plot
+│   └── cpu_smoke_train.py       <- dev-only CPU wiring check (see note below)
+└── plots/                       <- rendered plots (populated after a run)
 ```
 
-## Setup (local NVIDIA GPU)
+## Reviewer-feedback changes (v2)
 
-1. Install [`uv`](https://docs.astral.sh/uv/getting-started/installation/):
+This is the second revision. The first submission was returned with two
+"Requires Changes" items; both are now addressed:
 
-   ```sh
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-   ```
+1. **Reward Design — `format_reward_func` was additive-only.** A completely
+   malformed response scored a neutral `0.0` instead of a negative value,
+   so GRPO had no signal to move away from bad formatting. Fixed: the
+   function now uses explicit `else` branches that subtract `0.5` for a
+   missing XML envelope and `0.5` for a non-numeric answer. The in-cell
+   validation now prints `[-1.0, 1.0]` and asserts `_res[0] < 0`.
+2. **Training & Monitoring — the graded run must happen on a GPU.** The
+   notebook's Cell 34 (`max_steps=100`) is the real training run; it is
+   shipped *un-executed* so that running it on the Vocareum T4 fills in the
+   genuine reward log and the Cell 35 plot shows the actual upward trend.
 
-2. Create the env and install dependencies:
+## Dev-only CPU smoke test
 
-   ```sh
-   uv venv .venv --python 3.12
-   source .venv/bin/activate
-   uv pip install -r requirements.txt
-   python -m ipykernel install --user --name=letter-counter-grpo --display-name "Python (letter-counter-grpo)"
-   ```
-
-3. Launch Jupyter and run the notebook:
-
-   ```sh
-   jupyter lab project/starter/gen_ai_fundamentals_project_starter.ipynb
-   ```
-
-   Select the `Python (letter-counter-grpo)` kernel. Run every cell in order.
-
-Hardware requirement: single NVIDIA GPU with >= 16 GB VRAM (e.g. T4, L4,
-RTX 4080+) and CUDA 12.x. Full 100-step training takes ~30–60 minutes on a T4.
-
-## CPU smoke test (no GPU required)
-
-The Unsloth + vLLM stack assumes CUDA, but the rest of the pipeline (GRPO
-loop, reward functions, LoRA adapter, dataset, system prompt) is plain
-PyTorch / TRL / PEFT and runs fine on CPU. `scripts/cpu_smoke_train.py`
-swaps in a smaller base model so the whole loop fits in ~2 GB RAM:
-
-| | GPU notebook | CPU smoke |
-|---|---|---|
-| base model | `Qwen/Qwen2.5-3B-Instruct` (4-bit) | `Qwen/Qwen2.5-0.5B-Instruct` (fp32) |
-| inference engine | vLLM (`fast_generate`) | `transformers.generate` |
-| `per_device_train_batch_size` | 16 | 1 |
-| `num_generations` | 4 | 2 (TRL minimum) |
-| `max_steps` | 100 | configurable, default 3 |
-| reward funcs | same | same |
-| LoRA target modules | same | same |
-
-Run it:
-
-```sh
-MAX_STEPS=4 python scripts/cpu_smoke_train.py
-```
-
-It writes a real per-step `log_history.json` into `outputs_smoke/` that
-the notebook can quote.
+`scripts/cpu_smoke_train.py` runs the full GRPO + LoRA + reward-funcs loop
+on CPU with a smaller model (`Qwen2.5-0.5B-Instruct`). It was used during
+development to verify the pipeline wiring on a machine without a GPU. **It
+is not the graded training run** — that is Cell 34 of the notebook, run on
+the T4. The smoke script is kept only as a wiring-level reference.
 
 ## Rubric coverage
 
@@ -95,9 +72,10 @@ the notebook can quote.
 | Baseline CoT prompt with >= 1 worked example | Cell 8 — `SYSTEM_PROMPT` with the "room" example |
 | Rewards cover numbering / spelling / counting / formatting / correctness | Cells 17, 19, 21, 23, 25 |
 | Each reward shows good > bad in-cell | Each cell's `assert _res[1] > _res[0]` |
-| Longer training run (> quick pass) | Cell 34 — `max_steps=100` (vs. 5) |
+| Rewards are negative for undesired behaviour | Cell 23 — `format_reward_func` `else` penalties; `assert _res[0] < 0` |
+| Longer training run (> quick pass) | Cell 34 — `max_steps=100` (vs. 5), run on the T4 |
 | Mean correctness reward over time reported | Cell 35 — plot of `rewards/correct_answer_reward_func` |
-| Mean correctness reward increasing trend, OR documented anomaly + remedial config | Cell 34 — local CPU machine documented; remediation: T4 + same `COMMON_GRPO_TRAINING_PARAMS` |
+| Mean correctness reward shows an increasing trend | Cell 34 real 100-step T4 run + Cell 35 plot |
 | Comparison on a project-dataset example | Cell 40 — `compare_old_and_new_model(ds[0]["prompt"])` |
 | Catastrophic-forgetting check | Cell 43 — Philippines question; both OLD and NEW answer "Manila" |
 
