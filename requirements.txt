@@ -1,22 +1,23 @@
-# Pinned to versions known to work with the Udacity GenAI Fundamentals
-# project (Qwen2.5-3B-Instruct + Unsloth + TRL + vLLM + PEFT + LoRA).
+# Dependencies for the Letter-Counting GRPO + LoRA notebook.
+# Target: Linux + NVIDIA GPU (>= 16 GB VRAM, CUDA 12.x) — e.g. the
+# Udacity / Vocareum T4 workspace.
 #
-# GPU path (Linux + NVIDIA CUDA 12.x, >=16 GB VRAM):
+# Install from the workspace terminal with:
+#   pip install -r requirements.txt
+# or, if the workspace uses uv:
 #   uv pip install -r requirements.txt
 #
-# CPU smoke-test path: only the lines below "GPU-only" are required.
+# Note: the Vocareum workspace usually ships these pre-installed. Only run
+# the install if `import unsloth` fails in the notebook.
 
-# --- Core (GPU + CPU) ---
-transformers>=4.45,<6
-peft>=0.13
-datasets>=3.0
-trl>=0.21
-accelerate>=1.0
-matplotlib>=3.8
-ipykernel>=6.29
-jupyter>=1.0
-
-# --- GPU-only ---
 unsloth>=2025.1
 vllm>=0.6
 torch>=2.4
+transformers>=4.45,<6
+trl>=0.21
+peft>=0.13
+datasets>=3.0
+accelerate>=1.0
+bitsandbytes>=0.43
+matplotlib>=3.8
+ipykernel>=6.29
