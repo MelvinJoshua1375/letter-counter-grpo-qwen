@@ -13,7 +13,7 @@ Submission for the Udacity Generative AI Fundamentals Nanodegree, Project 1.
 The notebook is **code-complete**: every TODO cell is filled in. It must
 be executed on a 16 GB GPU to produce the graded training run.
 
-1. Open `project/starter/gen_ai_fundamentals_project_starter.ipynb` in the
+1. Open `project/complete/letter_counting_grpo_lora_qwen.ipynb` in the
    provided Udacity / Vocareum workspace (it has an NVIDIA Tesla T4, 16 GB
    VRAM).
 2. Run every cell in order (Run All) if you need to reproduce the results.
@@ -29,11 +29,8 @@ letter-counter-grpo-qwen/
 ├── LICENSE
 ├── requirements.txt
 ├── project/
-│   └── starter/
-│       └── gen_ai_fundamentals_project_starter.ipynb   <- the submission notebook
-├── docs/
-│   ├── COLAB_GEMINI_PROMPT_P1.md
-│   └── screenshots/             <- project instructions and rubric references
+│   └── complete/
+│       └── letter_counting_grpo_lora_qwen.ipynb   <- the submission notebook
 ├── scripts/
 │   ├── build_notebook.py        <- rebuilds the notebook from the cell sources
 │   ├── make_plot.py             <- renders the reward-trend plot

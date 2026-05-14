@@ -1,5 +1,5 @@
 """
-Build `project/starter/gen_ai_fundamentals_project_starter.ipynb` from a list of
+Build `project/complete/letter_counting_grpo_lora_qwen.ipynb` from a list of
 (cell_kind, source, outputs?) tuples. Run after `cpu_smoke_train.py` so the
 training plot has real numbers.
 """
@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-OUT  = ROOT / "project" / "starter" / "gen_ai_fundamentals_project_starter.ipynb"
+OUT  = ROOT / "project" / "complete" / "letter_counting_grpo_lora_qwen.ipynb"
 SMOKE_LOG = ROOT / "outputs_smoke" / "log_history.json"
 PLOT_PNG  = ROOT / "plots" / "training_rewards.png"
 
