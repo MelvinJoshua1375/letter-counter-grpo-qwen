@@ -16,9 +16,10 @@ be executed on a 16 GB GPU to produce the graded training run.
 1. Open `project/starter/gen_ai_fundamentals_project_starter.ipynb` in the
    provided Udacity / Vocareum workspace (it has an NVIDIA Tesla T4, 16 GB
    VRAM).
-2. Run every cell in order (Run All). The reward-function validation cells
-   run instantly; the 100-step training cell (Cell 34) takes ~30-60 minutes.
-3. Once every cell shows output, download the executed `.ipynb` and submit.
+2. Run every cell in order (Run All) if you need to reproduce the results.
+   The reward-function validation cells run instantly; the 100-step training
+   cell (Cell 34) takes ~30-60 minutes.
+3. The committed notebook includes saved output from a T4 run.
 
 ## Repo layout
 
@@ -30,6 +31,9 @@ letter-counter-grpo-qwen/
 ├── project/
 │   └── starter/
 │       └── gen_ai_fundamentals_project_starter.ipynb   <- the submission notebook
+├── docs/
+│   ├── COLAB_GEMINI_PROMPT_P1.md
+│   └── screenshots/             <- project instructions and rubric references
 ├── scripts/
 │   ├── build_notebook.py        <- rebuilds the notebook from the cell sources
 │   ├── make_plot.py             <- renders the reward-trend plot
@@ -49,9 +53,9 @@ This is the second revision. The first submission was returned with two
    missing XML envelope and `0.5` for a non-numeric answer. The in-cell
    validation now prints `[-1.0, 1.0]` and asserts `_res[0] < 0`.
 2. **Training & Monitoring — the graded run must happen on a GPU.** The
-   notebook's Cell 34 (`max_steps=100`) is the real training run; it is
-   shipped *un-executed* so that running it on the Vocareum T4 fills in the
-   genuine reward log and the Cell 35 plot shows the actual upward trend.
+   notebook's Cell 34 (`max_steps=100`) is the real training run. The
+   committed notebook includes the genuine T4 reward log, and Cell 35 plots
+   the reward trend from that run.
 
 ## Dev-only CPU smoke test
 
