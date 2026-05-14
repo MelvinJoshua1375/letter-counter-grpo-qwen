@@ -1,23 +1,33 @@
-# Dependencies for the Letter-Counting GRPO + LoRA notebook.
-# Target: Linux + NVIDIA GPU (>= 16 GB VRAM, CUDA 12.x) — e.g. the
-# Udacity / Vocareum T4 workspace.
+# IMPORTANT — read before installing.
 #
-# Install from the workspace terminal with:
+# The Udacity / Vocareum T4 workspace for this project ships with the heavy
+# GPU stack ALREADY INSTALLED: unsloth, vllm, torch, trl, peft, datasets,
+# transformers, accelerate, bitsandbytes.
+#
+# Do NOT `pip install` those — pip will try to REBUILD vllm from source,
+# which fails on the workspace with "CUDA_HOME is not set". Just upload the
+# notebook and Run All.
+#
+# This file therefore only lists the small, pure-Python extras the notebook
+# needs that may not be pre-installed. Install them with:
+#
 #   pip install -r requirements.txt
-# or, if the workspace uses uv:
-#   uv pip install -r requirements.txt
 #
-# Note: the Vocareum workspace usually ships these pre-installed. Only run
-# the install if `import unsloth` fails in the notebook.
+# If even these are already present, the install is a no-op — safe to run.
 
-unsloth>=2025.1
-vllm>=0.6
-torch>=2.4
-transformers>=4.45,<6
-trl>=0.21
-peft>=0.13
-datasets>=3.0
-accelerate>=1.0
-bitsandbytes>=0.43
-matplotlib>=3.8
-ipykernel>=6.29
+matplotlib>=3.8        # Cell 35 — training-reward plot
+ipykernel>=6.29        # notebook kernel (usually already present)
+
+# --- The GPU stack below is for reference only. It is pre-installed on the
+# --- Vocareum workspace. Do NOT uncomment / install it there — building
+# --- vllm from source needs a CUDA toolchain the workspace doesn't expose.
+#
+# unsloth>=2025.1
+# vllm>=0.6
+# torch>=2.4
+# transformers>=4.45,<6
+# trl>=0.21
+# peft>=0.13
+# datasets>=3.0
+# accelerate>=1.0
+# bitsandbytes>=0.43
